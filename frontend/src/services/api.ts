@@ -30,15 +30,12 @@ api.interceptors.response.use(
   }
 )
 
-// In-memory token store — never use localStorage or cookies
-export const tokenStore = (() => {
-  let _token: string | null = null
-  return {
-    get: () => _token,
-    set: (t: string) => { _token = t },
-    clear: () => { _token = null },
-  }
-})()
+// sessionStorage token store — survives page refresh, cleared when the tab closes
+export const tokenStore = {
+  get: () => sessionStorage.getItem('auth_token'),
+  set: (t: string) => sessionStorage.setItem('auth_token', t),
+  clear: () => sessionStorage.removeItem('auth_token'),
+}
 
 export default api
 

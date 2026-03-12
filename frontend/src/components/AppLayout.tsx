@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { LayoutGrid, ChefHat, Clock, Sun, Moon, LogOut, BarChart2, Settings } from 'lucide-react'
 import { toast } from 'sonner'
@@ -43,28 +43,70 @@ function getInitials(displayName: string): string {
 export default function AppLayout() {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  // Singleton AudioContext — created once on first user interaction to avoid suspension
+  const audioCtxRef = useRef<AudioContext | null>(null)
+
+  // Request notification permission once (to enable system notifications when app is in background)
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+  }, [])
+
+  // Unlock AudioContext on the first user gesture so mobile browsers allow sound
+  useEffect(() => {
+    function unlockAudio() {
+      if (!audioCtxRef.current) {
+        try {
+          audioCtxRef.current = new AudioContext()
+        } catch {
+          // AudioContext not supported
+        }
+      }
+    }
+    window.addEventListener('pointerdown', unlockAudio, { once: true })
+    return () => window.removeEventListener('pointerdown', unlockAudio)
+  }, [])
 
   useEffect(() => {
+    function playDone() {
+      const ctx = audioCtxRef.current
+      if (!ctx) return
+      const play = () => {
+        try {
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.frequency.value = 660
+          gain.gain.setValueAtTime(0.35, ctx.currentTime)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
+          osc.start(ctx.currentTime)
+          osc.stop(ctx.currentTime + 0.35)
+        } catch {
+          // ignore
+        }
+      }
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(play).catch(() => {})
+      } else {
+        play()
+      }
+    }
+
     function handleOrderDone(order: { table_number: number | null; sequence_number: number }) {
       const label = order.table_number ? `Table ${order.table_number}` : 'a table'
-      try {
-        const ctx = new AudioContext()
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        osc.frequency.value = 660
-        gain.gain.setValueAtTime(0.35, ctx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
-        osc.start(ctx.currentTime)
-        osc.stop(ctx.currentTime + 0.35)
-      } catch {
-        // AudioContext not available
-      }
+      const message = `Order #${order.sequence_number} for ${label} is ready to deliver!`
+
+      playDone()
       navigator.vibrate?.([150, 80, 150, 80, 300])
-      toast.success(`Order #${order.sequence_number} for ${label} is ready to deliver!`, {
-        duration: 8000,
-      })
+
+      // System notification — visible even when the browser is in the background
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Order ready! 🍽️', { body: message, icon: '/pwa-192x192.png' })
+      }
+
+      toast.success(message, { duration: 8000 })
     }
 
     socket.on('order:done', handleOrderDone)

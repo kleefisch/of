@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import type { AuthUser } from '@/types'
 import api, { tokenStore } from '@/services/api'
 import { socket } from '@/services/socket'
@@ -17,8 +17,38 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function joinRooms(userData: AuthUser) {
+  if (userData.role === 'kitchen') {
+    socket.emit('join', { room: 'kitchen' })
+  } else if (userData.role === 'waiter') {
+    socket.emit('join', { room: `waiter_${userData.id}` })
+  } else if (userData.role === 'manager') {
+    socket.emit('join', { room: 'kitchen' })
+    socket.emit('join', { room: `waiter_${userData.id}` })
+    socket.emit('join', { room: 'admin' })
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    // Restore session from sessionStorage on page refresh
+    try {
+      const token = sessionStorage.getItem('auth_token')
+      const stored = sessionStorage.getItem('auth_user')
+      if (token && stored) return JSON.parse(stored) as AuthUser
+    } catch {
+      // ignore parse errors
+    }
+    return null
+  })
+
+  // Reconnect WebSocket when session is restored after a page refresh
+  useEffect(() => {
+    if (!user) return
+    if (socket.connected) return
+    socket.connect()
+    socket.once('connect', () => joinRooms(user))
+  }, [user])
 
   const login = useCallback(async (username: string, password: string) => {
     const response = await api.post<ApiSuccess<LoginResponse>>('/auth/login', {
@@ -27,25 +57,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     const { access_token, user: userData } = response.data.data
     tokenStore.set(access_token)
+    sessionStorage.setItem('auth_user', JSON.stringify(userData))
     setUser(userData)
 
     // Connect WebSocket and join role-appropriate rooms
     socket.connect()
-    socket.once('connect', () => {
-      if (userData.role === 'kitchen') {
-        socket.emit('join', { room: 'kitchen' })
-      } else if (userData.role === 'waiter') {
-        socket.emit('join', { room: `waiter_${userData.id}` })
-      } else if (userData.role === 'manager') {
-        socket.emit('join', { room: 'kitchen' })
-        socket.emit('join', { room: `waiter_${userData.id}` })
-        socket.emit('join', { room: 'admin' })
-      }
-    })
+    socket.once('connect', () => joinRooms(userData))
   }, [])
 
   const logout = useCallback(() => {
     tokenStore.clear()
+    sessionStorage.removeItem('auth_user')
     setUser(null)
     socket.disconnect()
   }, [])
