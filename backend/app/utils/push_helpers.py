@@ -31,6 +31,7 @@ def send_push_to_user(user_id: int, title: str, body: str) -> None:
                     data=json.dumps({"title": title, "body": body}),
                     vapid_private_key=_VAPID_PRIVATE_KEY,
                     vapid_claims=_VAPID_CLAIMS,
+                    headers={"Urgency": "high"},
                 )
             except WebPushException as exc:
                 if exc.response is not None and exc.response.status_code in (404, 410):
