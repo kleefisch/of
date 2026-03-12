@@ -17,21 +17,25 @@ self.addEventListener('push', (event: PushEvent) => {
   const data = event.data?.json() as { title: string; body: string } | undefined
   if (!data) return
 
+  // Keep options typed as a generic dictionary to support all SW runtimes.
+  const notificationOptions: Record<string, unknown> = {
+    body: data.body,
+    icon: '/pwa-192x192.png',
+    badge: '/pwa-64x64.png',
+    vibrate: [150, 80, 150, 80, 300],
+    data: { url: '/' },
+  }
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/pwa-192x192.png',
-      badge: '/pwa-64x64.png',
-      vibrate: [150, 80, 150, 80, 300],
-      data: { url: '/' },
-    })
+    self.registration.showNotification(data.title, notificationOptions as NotificationOptions)
   )
 })
 
 // Tapping the notification opens / focuses the app
-self.addEventListener('notificationclick', (event: NotificationClickEvent) => {
-  event.notification.close()
-  event.waitUntil(
+self.addEventListener('notificationclick', (event: Event) => {
+  const notificationEvent = event as NotificationEvent & ExtendableEvent
+  notificationEvent.notification.close()
+  notificationEvent.waitUntil(
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
