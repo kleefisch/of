@@ -95,7 +95,8 @@ export default function CloseTableModal({ billId, tableNumber, onClose, onSucces
 
   // Restore split state when summary is loaded and a split_plan exists
   useEffect(() => {
-    const plan = summary?.split_plan
+    if (!summary) return
+    const plan = summary.split_plan
     if (!plan?.length) return
 
     if (summary.split_method === 'split_equally' || summary.split_method === 'custom_amount') {

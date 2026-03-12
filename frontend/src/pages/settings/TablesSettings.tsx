@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Users, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/services/api'
 import type { Table, ApiSuccess } from '@/types'

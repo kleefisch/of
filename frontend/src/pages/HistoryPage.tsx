@@ -346,31 +346,6 @@ function InfoChip({ label, value }: { label: string; value: string }) {
   )
 }
 
-// ── Filter pill button ────────────────────────────────────────────────────────
-
-function FilterPill({
-  label,
-  active,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-[10px] border px-3 py-1.5 text-[13px] font-medium transition-colors ${
-        active
-          ? 'border-[#F54900] bg-[#F54900] text-white'
-          : 'border-[#E5E7EB] bg-white text-[#4A5565] shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-[#1E2939] dark:text-gray-300 dark:hover:bg-gray-700'
-      }`}
-    >
-      {label}
-    </button>
-  )
-}
-
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 const PERIODS: { value: Period; label: string }[] = [

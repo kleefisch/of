@@ -322,8 +322,8 @@ export default function DashboardPage() {
                     width={45}
                   />
                   <Tooltip
-                    formatter={(v: number) => [fmt$(v), 'Revenue']}
-                    labelFormatter={(l: string) => l}
+                    formatter={((v: number) => [fmt$(v), 'Revenue']) as never}
+                    labelFormatter={((l: string) => l) as never}
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E5E7EB' }}
                   />
                   <Area type="monotone" dataKey="value" stroke="#111827" strokeWidth={2} fill="url(#revGrad)" dot={false} />
@@ -353,8 +353,8 @@ export default function DashboardPage() {
                     allowDecimals={false}
                   />
                   <Tooltip
-                    formatter={(v: number) => [v, 'Orders']}
-                    labelFormatter={(h: number) => `${HOUR_LABELS[h]} – ${HOUR_LABELS[(h + 1) % 24]}`}
+                    formatter={((v: number) => [v, 'Orders']) as never}
+                    labelFormatter={((h: number) => `${HOUR_LABELS[h]} – ${HOUR_LABELS[(h + 1) % 24]}`) as never}
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E5E7EB' }}
                   />
                   <Bar dataKey="count" fill="#374151" radius={[3, 3, 0, 0]} />
@@ -389,9 +389,9 @@ export default function DashboardPage() {
                       width={110}
                     />
                     <Tooltip
-                      formatter={(v: number, name: string) =>
+                      formatter={((v: number, name: string) =>
                         name === 'quantity' ? [v, 'Qty'] : [fmt$(v), 'Revenue']
-                      }
+                      ) as never}
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E5E7EB' }}
                     />
                     <Bar dataKey="quantity" fill="#111827" radius={[0, 3, 3, 0]} barSize={14} />
