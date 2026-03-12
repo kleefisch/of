@@ -46,12 +46,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Reconnect WebSocket and subscribe to push when session is restored after a page refresh
   useEffect(() => {
     if (!user) return
-    if (!socket.connected) {
-      socket.connect()
-      socket.once('connect', () => joinRooms(user))
+    const currentUser = user
+
+    function handleConnect() {
+      joinRooms(currentUser)
     }
+
+    socket.on('connect', handleConnect)
+    if (!socket.connected) socket.connect()
+    else handleConnect()
+
     // Re-subscribe to push (no-op if already subscribed)
     subscribeToPush()
+
+    return () => {
+      socket.off('connect', handleConnect)
+    }
   }, [user])
 
   const login = useCallback(async (username: string, password: string) => {
@@ -66,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Connect WebSocket and join role-appropriate rooms
     socket.connect()
-    socket.once('connect', () => joinRooms(userData))
   }, [])
 
   const logout = useCallback(() => {

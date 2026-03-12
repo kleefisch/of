@@ -46,7 +46,10 @@ def get_bill_summary(bill_id: int):
 
     orders = Order.query.options(
         joinedload(Order.items).joinedload(OrderItem.menu_item)
-    ).filter_by(bill_id=bill_id).all()
+    ).filter(
+        Order.bill_id == bill_id,
+        Order.status != "cancelled",
+    ).all()
     items_flat = []
     subtotal = 0.0
     for order in orders:
@@ -203,7 +206,10 @@ def pay_person(bill_id: int):
     auto_closed = False
     if all_paid:
         # Recalculate current subtotal (handles new orders added mid-split)
-        orders = Order.query.filter_by(bill_id=bill_id).all()
+        orders = Order.query.filter(
+            Order.bill_id == bill_id,
+            Order.status != "cancelled",
+        ).all()
         subtotal = round(sum(
             float(item.unit_price) * item.quantity
             for order in orders
@@ -383,7 +389,10 @@ def confirm_payment(bill_id: int):
         return error_response("Invalid split_method.", "VALIDATION_ERROR", 400)
 
     # Recalculate subtotal
-    orders = Order.query.filter_by(bill_id=bill_id).all()
+    orders = Order.query.filter(
+        Order.bill_id == bill_id,
+        Order.status != "cancelled",
+    ).all()
     subtotal = sum(
         float(item.unit_price) * item.quantity
         for order in orders
