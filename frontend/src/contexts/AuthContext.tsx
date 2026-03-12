@@ -67,8 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Connect WebSocket and join role-appropriate rooms
     socket.connect()
     socket.once('connect', () => joinRooms(userData))
-    // Subscribe to Web Push (works for waiter, kitchen, and manager)
-    subscribeToPush()
   }, [])
 
   const logout = useCallback(() => {

@@ -514,7 +514,7 @@ export default function ServicePage() {
     if (!data || cart.length === 0) return
     setIsSending(true)
     try {
-      await api.post<ApiSuccess<Order>>('/orders', {
+      const response = await api.post<ApiSuccess<Order>>('/orders', {
         bill_id: data.billId,
         items: cart.map((c) => ({
           menu_item_id: c.menuItem.id,
@@ -522,10 +522,18 @@ export default function ServicePage() {
           special_instructions: c.specialInstructions || null,
         })),
       })
+
       setCart([])
       setView('service')
-      await refetch()
       toast.success('Order sent to kitchen!')
+
+      try {
+        await refetch()
+      } catch {
+        toast.warning('Order was created, but the screen could not refresh automatically.')
+      }
+
+      return response
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??

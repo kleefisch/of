@@ -26,14 +26,17 @@ export async function subscribeToPush(): Promise<void> {
   try {
     const registration = await navigator.serviceWorker.ready
     const vapidKey = await getVapidPublicKey()
+    if (!vapidKey) return
 
-    const subscription = await registration.pushManager.subscribe({
+    const existingSubscription = await registration.pushManager.getSubscription()
+    const subscription = existingSubscription ?? await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidKey),
     })
 
     const json = subscription.toJSON()
     const keys = json.keys as { p256dh: string; auth: string }
+    if (!keys?.p256dh || !keys?.auth) return
 
     await api.post('/push/subscribe', {
       endpoint: subscription.endpoint,
