@@ -25,7 +25,7 @@ def create_app(env: str = "development") -> Flask:
     )
 
     # Import models so Flask-Migrate can detect them
-    from app.models import user, table, menu_category, menu_item, bill, order, order_item, payment, table_event  # noqa: F401
+    from app.models import user, table, menu_category, menu_item, bill, order, order_item, payment, table_event, push_subscription  # noqa: F401
 
     # Register blueprints
     from app.blueprints.auth import auth_bp
@@ -36,6 +36,7 @@ def create_app(env: str = "development") -> Flask:
     from app.blueprints.admin import admin_bp
     from app.blueprints.history import history_bp
     from app.blueprints.analytics import analytics_bp
+    from app.blueprints.push import push_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(menu_bp, url_prefix="/api/menu")
@@ -45,6 +46,7 @@ def create_app(env: str = "development") -> Flask:
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(history_bp, url_prefix="/api/history")
     app.register_blueprint(analytics_bp, url_prefix="/api/analytics")
+    app.register_blueprint(push_bp, url_prefix="/api/push")
 
     # Register WebSocket event handlers
     from app.sockets import events  # noqa: F401

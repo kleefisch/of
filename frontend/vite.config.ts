@@ -10,6 +10,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Use custom service worker (src/sw.ts) so we can handle push events
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       manifest: {
         name: 'OrderFlow POS',
         short_name: 'OrderFlow',
@@ -29,20 +33,7 @@ export default defineConfig({
       },
       workbox: {
         // Cache the app shell (JS, CSS, HTML, fonts, icons)
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        // SPA fallback — all navigation requests serve index.html
-        navigateFallback: 'index.html',
-        // Never cache API calls or socket — always go to the network
-        runtimeCaching: [
-          {
-            urlPattern: /^\/api\//,
-            handler: 'NetworkOnly',
-          },
-          {
-            urlPattern: /^\/socket\.io\//,
-            handler: 'NetworkOnly',
-          },
-        ],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,wav}'],
       },
     }),
   ],

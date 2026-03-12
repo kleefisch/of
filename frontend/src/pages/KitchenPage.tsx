@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { ChefHat, Clock, User, ShoppingBag, ChevronRight, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useKitchenOrders } from '@/hooks/useKitchenOrders'
@@ -414,28 +414,13 @@ function OrderColumn({
 }
 
 // ---------------------------------------------------------------------------
-// Notification helpers (sound + vibration)
+// Notification helpers (vibration + toast — audio handled inside KitchenPage)
 // ---------------------------------------------------------------------------
-function playBeep(frequency: number, duration: number) {
-  try {
-    const ctx = new AudioContext()
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.frequency.value = frequency
-    gain.gain.setValueAtTime(0.35, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration)
-    osc.start(ctx.currentTime)
-    osc.stop(ctx.currentTime + duration)
-  } catch {
-    // AudioContext not available
+function notifyNewOrder(audio: HTMLAudioElement | null) {
+  if (audio) {
+    audio.currentTime = 0
+    audio.play().catch(() => {})
   }
-}
-
-function notifyNewOrder() {
-  playBeep(880, 0.25)
-  setTimeout(() => playBeep(1100, 0.2), 280)
   navigator.vibrate?.([200, 80, 200])
   toast.info('New order received!', { duration: 5000 })
 }
@@ -444,7 +429,21 @@ function notifyNewOrder() {
 // KitchenPage
 // ---------------------------------------------------------------------------
 export default function KitchenPage() {
-  const handleNewOrder = useCallback(() => notifyNewOrder(), [])
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Preload and unlock audio on first user gesture
+  useEffect(() => {
+    const audio = new Audio('/beep.wav')
+    audio.preload = 'auto'
+    audioRef.current = audio
+    function unlockAudio() {
+      audio.play().then(() => audio.pause()).catch(() => {})
+    }
+    window.addEventListener('pointerdown', unlockAudio, { once: true })
+    return () => window.removeEventListener('pointerdown', unlockAudio)
+  }, [])
+
+  const handleNewOrder = useCallback(() => notifyNewOrder(audioRef.current), [])
   const { pending, preparing, done, isLoading, error, updateOrderStatus } =
     useKitchenOrders(handleNewOrder)
   const { user } = useAuth()

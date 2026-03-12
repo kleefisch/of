@@ -13,6 +13,7 @@ from app.models.menu_item import MenuItem
 from app.models.table_event import TableEvent
 from app.utils.response import success_response, error_response
 from app.utils.auth_helpers import roles_required
+from app.utils.push_helpers import send_push_to_role, send_push_to_user
 
 
 # ---------------------------------------------------------------------------
@@ -73,10 +74,13 @@ def create_order():
                f"Order #{sequence_number} sent to kitchen", user_id)
     db.session.commit()
 
-    # Notify kitchen with sound+vibration
+    # Notify kitchen with sound+vibration (WebSocket)
     socketio.emit("order:created", _order_dict(order), to="kitchen")
     # Silent update for admin
     socketio.emit("order:status_changed", {"order_id": order.id, "status": order.status}, to="admin")
+    # Web Push to all kitchen devices (works with screen locked)
+    label = f"Table {bill.table.number}" if bill.table else "a table"
+    send_push_to_role("kitchen", "New order! 🍳", f"Order #{sequence_number} from {label}")
 
     return success_response(_order_dict(order), "Order sent to kitchen.", 201)
 
@@ -167,9 +171,16 @@ def update_order_status(order_id: int):
                f"Order #{order.sequence_number} → {new_status}", user_id)
     db.session.commit()
 
-    # Notify waiter when order is done (sound+vibration)
+    # Notify waiter when order is done (WebSocket — sound+vibration)
     if new_status == "done":
         socketio.emit("order:done", _order_dict(order), to=f"waiter_{order.bill.waiter_id}")
+        # Web Push to the specific waiter's devices (works with screen locked)
+        table_label = f"Table {order.bill.table.number}" if order.bill.table else "a table"
+        send_push_to_user(
+            order.bill.waiter_id,
+            "Order ready! 🍽️",
+            f"Order #{order.sequence_number} for {table_label} is ready to deliver!",
+        )
 
     # Silent update for kitchen and admin
     socketio.emit("order:status_changed",

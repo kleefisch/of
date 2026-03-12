@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import type { AuthUser } from '@/types'
 import api, { tokenStore } from '@/services/api'
 import { socket } from '@/services/socket'
+import { subscribeToPush } from '@/services/pushNotifications'
 import type { ApiSuccess } from '@/types'
 
 interface LoginResponse {
@@ -42,12 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null
   })
 
-  // Reconnect WebSocket when session is restored after a page refresh
+  // Reconnect WebSocket and subscribe to push when session is restored after a page refresh
   useEffect(() => {
     if (!user) return
-    if (socket.connected) return
-    socket.connect()
-    socket.once('connect', () => joinRooms(user))
+    if (!socket.connected) {
+      socket.connect()
+      socket.once('connect', () => joinRooms(user))
+    }
+    // Re-subscribe to push (no-op if already subscribed)
+    subscribeToPush()
   }, [user])
 
   const login = useCallback(async (username: string, password: string) => {
@@ -63,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Connect WebSocket and join role-appropriate rooms
     socket.connect()
     socket.once('connect', () => joinRooms(userData))
+    // Subscribe to Web Push (works for waiter, kitchen, and manager)
+    subscribeToPush()
   }, [])
 
   const logout = useCallback(() => {

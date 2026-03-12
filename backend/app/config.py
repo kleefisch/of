@@ -16,6 +16,10 @@ class Config:
 
     STRIPE_SECRET_KEY: str = os.environ.get("STRIPE_SECRET_KEY", "")
 
+    VAPID_PUBLIC_KEY: str = os.environ.get("VAPID_PUBLIC_KEY", "")
+    VAPID_PRIVATE_KEY: str = os.environ.get("VAPID_PRIVATE_KEY", "")
+    VAPID_MAILTO: str = os.environ.get("VAPID_MAILTO", "mailto:admin@orderflow.app")
+
     CORS_ORIGINS: list[str] = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
 
 

@@ -43,69 +43,35 @@ function getInitials(displayName: string): string {
 export default function AppLayout() {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
-  // Singleton AudioContext — created once on first user interaction to avoid suspension
-  const audioCtxRef = useRef<AudioContext | null>(null)
+  // Audio element — more reliable than AudioContext on mobile browsers
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Request notification permission once (to enable system notifications when app is in background)
+  // Preload beep and unlock it on first user gesture
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-  }, [])
+    const audio = new Audio('/beep.wav')
+    audio.preload = 'auto'
+    audioRef.current = audio
 
-  // Unlock AudioContext on the first user gesture so mobile browsers allow sound
-  useEffect(() => {
     function unlockAudio() {
-      if (!audioCtxRef.current) {
-        try {
-          audioCtxRef.current = new AudioContext()
-        } catch {
-          // AudioContext not supported
-        }
-      }
+      // Play silent and immediately pause to unlock audio restrictions
+      audio.play().then(() => audio.pause()).catch(() => {})
     }
     window.addEventListener('pointerdown', unlockAudio, { once: true })
     return () => window.removeEventListener('pointerdown', unlockAudio)
   }, [])
 
   useEffect(() => {
-    function playDone() {
-      const ctx = audioCtxRef.current
-      if (!ctx) return
-      const play = () => {
-        try {
-          const osc = ctx.createOscillator()
-          const gain = ctx.createGain()
-          osc.connect(gain)
-          gain.connect(ctx.destination)
-          osc.frequency.value = 660
-          gain.gain.setValueAtTime(0.35, ctx.currentTime)
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
-          osc.start(ctx.currentTime)
-          osc.stop(ctx.currentTime + 0.35)
-        } catch {
-          // ignore
-        }
-      }
-      if (ctx.state === 'suspended') {
-        ctx.resume().then(play).catch(() => {})
-      } else {
-        play()
-      }
-    }
-
     function handleOrderDone(order: { table_number: number | null; sequence_number: number }) {
       const label = order.table_number ? `Table ${order.table_number}` : 'a table'
       const message = `Order #${order.sequence_number} for ${label} is ready to deliver!`
 
-      playDone()
-      navigator.vibrate?.([150, 80, 150, 80, 300])
-
-      // System notification — visible even when the browser is in the background
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Order ready! 🍽️', { body: message, icon: '/pwa-192x192.png' })
+      // Play beep — reset currentTime so it works if triggered in quick succession
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0
+        audioRef.current.play().catch(() => {})
       }
 
+      navigator.vibrate?.([150, 80, 150, 80, 300])
       toast.success(message, { duration: 8000 })
     }
 
