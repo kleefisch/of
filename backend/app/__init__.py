@@ -34,6 +34,8 @@ def create_app(env: str = "development") -> Flask:
     from app.blueprints.orders import orders_bp
     from app.blueprints.payments import payments_bp
     from app.blueprints.admin import admin_bp
+    from app.blueprints.history import history_bp
+    from app.blueprints.analytics import analytics_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(menu_bp, url_prefix="/api/menu")
@@ -41,6 +43,8 @@ def create_app(env: str = "development") -> Flask:
     app.register_blueprint(orders_bp, url_prefix="/api/orders")
     app.register_blueprint(payments_bp, url_prefix="/api/payments")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(history_bp, url_prefix="/api/history")
+    app.register_blueprint(analytics_bp, url_prefix="/api/analytics")
 
     # Register WebSocket event handlers
     from app.sockets import events  # noqa: F401

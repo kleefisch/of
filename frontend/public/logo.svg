@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="96" fill="#09090b"/>
+  <!-- Plate circle -->
+  <circle cx="256" cy="224" r="110" fill="none" stroke="#ffffff" stroke-width="20"/>
+  <!-- Fork (left) -->
+  <line x1="188" y1="120" x2="188" y2="200" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <line x1="204" y1="120" x2="204" y2="200" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <line x1="220" y1="120" x2="220" y2="200" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <line x1="204" y1="200" x2="204" y2="340" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <path d="M188 200 Q204 230 220 200" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <!-- Knife (right) -->
+  <line x1="316" y1="120" x2="316" y2="340" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <path d="M316 120 Q340 150 316 200" fill="#ffffff"/>
+  <!-- App name text -->
+  <text x="256" y="440" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="4">OrderFlow</text>
+</svg>

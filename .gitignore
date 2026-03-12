@@ -1,5 +1,7 @@
 backend/venv/
 backend/.env
+frontend/.env
+.vscode/mcp.json
 backend/__pycache__/
 backend/**/__pycache__/
 node_modules/

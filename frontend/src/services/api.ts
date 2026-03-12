@@ -1,7 +1,11 @@
 import axios, { type AxiosRequestConfig } from 'axios'
 
+// In dev, VITE_API_URL is not set — the Vite proxy forwards /api to localhost:5000.
+// In production, VITE_API_URL is set to the Render backend URL (e.g. https://orderflow.onrender.com).
+const BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 })
 

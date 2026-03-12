@@ -15,6 +15,7 @@ class Bill(db.Model):
     tip_amount: float = db.Column(db.Numeric(10, 2), nullable=True)
     subtotal: float = db.Column(db.Numeric(10, 2), nullable=True)
     total: float = db.Column(db.Numeric(10, 2), nullable=True)
+    split_plan = db.Column(db.JSON, nullable=True)  # persists per-person split state
     opened_at: datetime = db.Column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )

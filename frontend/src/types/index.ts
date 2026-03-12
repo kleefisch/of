@@ -15,13 +15,14 @@ export interface Table {
   status: TableStatus
   is_active: boolean
   waiter_id: number | null
+  waiter_display_name: string | null
   service_started_at: string | null
 }
 
 export type OrderStatus = 'pending' | 'preparing' | 'done' | 'delivered' | 'cancelled'
 export type BillStatus = 'open' | 'closed' | 'cancelled'
 export type SplitMethod = 'full' | 'custom_amount' | 'split_equally' | 'by_items'
-export type PaymentMethod = 'credit' | 'debit' | 'cash'
+export type PaymentMethod = 'credit' | 'debit' | 'cash' | 'tap_to_pay' | 'qr_code' | 'card_reader'
 
 export interface MenuCategory {
   id: number
@@ -44,6 +45,7 @@ export interface OrderItem {
   id: number
   order_id: number
   menu_item_id: number
+  name: string | null
   quantity: number
   unit_price: number
   special_instructions: string | null
@@ -52,6 +54,8 @@ export interface OrderItem {
 export interface Order {
   id: number
   bill_id: number
+  table_number: number | null
+  waiter_name: string | null
   sequence_number: number
   status: OrderStatus
   sent_to_kitchen_at: string
@@ -75,6 +79,16 @@ export interface Bill {
   total: number | null
   opened_at: string
   closed_at: string | null
+}
+
+export interface User {
+  id: number
+  full_name: string
+  display_name: string
+  username: string
+  role: Role
+  is_active: boolean
+  created_at: string
 }
 
 export interface ApiSuccess<T> {

@@ -92,19 +92,24 @@ def list_orders():
     claims = get_jwt()
     role = claims.get("role")
 
+    _eager = [
+        joinedload(Order.items).joinedload(OrderItem.menu_item),
+        joinedload(Order.bill).joinedload(Bill.table),
+        joinedload(Order.bill).joinedload(Bill.waiter),
+    ]
     if bill_id:
         orders = (
             Order.query
-            .options(joinedload(Order.items))
+            .options(*_eager)
             .filter_by(bill_id=bill_id)
             .order_by(Order.sequence_number)
             .all()
         )
-    elif role in ("kitchen", "manager"):
+    elif role in ("kitchen", "manager", "waiter"):
         # Active orders only (not delivered/cancelled)
         orders = (
             Order.query
-            .options(joinedload(Order.items))
+            .options(*_eager)
             .filter(Order.status.in_(["pending", "preparing", "done"]))
             .order_by(Order.sent_to_kitchen_at)
             .all()
@@ -122,7 +127,11 @@ def list_orders():
 @orders_bp.patch("/<int:order_id>/status")
 @jwt_required()
 def update_order_status(order_id: int):
-    order = Order.query.options(joinedload(Order.bill)).get(order_id)
+    order = Order.query.options(
+        joinedload(Order.bill).joinedload(Bill.table),
+        joinedload(Order.bill).joinedload(Bill.waiter),
+        joinedload(Order.items).joinedload(OrderItem.menu_item),
+    ).get(order_id)
     if not order:
         return error_response("Order not found.", "ORDER_NOT_FOUND", 404)
 
@@ -219,9 +228,12 @@ def _log_event(table_id: int, bill_id: int | None, order_id: int | None,
 
 
 def _order_dict(order: Order) -> dict:
+    bill = order.bill
     return {
         "id": order.id,
         "bill_id": order.bill_id,
+        "table_number": bill.table.number if bill and bill.table else None,
+        "waiter_name": bill.waiter.display_name if bill and bill.waiter else None,
         "sequence_number": order.sequence_number,
         "status": order.status,
         "sent_to_kitchen_at": order.sent_to_kitchen_at.isoformat(),
@@ -233,6 +245,7 @@ def _order_dict(order: Order) -> dict:
             {
                 "id": i.id,
                 "menu_item_id": i.menu_item_id,
+                "name": i.menu_item.name if i.menu_item else None,
                 "quantity": i.quantity,
                 "unit_price": float(i.unit_price),
                 "special_instructions": i.special_instructions,

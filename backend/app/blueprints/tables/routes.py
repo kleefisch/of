@@ -8,6 +8,7 @@ from app.blueprints.tables import tables_bp
 from app.extensions import db, socketio
 from app.models.table import Table
 from app.models.bill import Bill
+from app.models.order import Order
 from app.models.table_event import TableEvent
 from app.utils.response import success_response, error_response
 from app.utils.auth_helpers import roles_required
@@ -20,13 +21,11 @@ from app.utils.auth_helpers import roles_required
 @tables_bp.get("")
 @jwt_required()
 def list_tables():
-    tables = (
-        Table.query
-        .options(joinedload(Table.waiter))
-        .filter_by(is_active=True)
-        .order_by(Table.number)
-        .all()
-    )
+    include_all = request.args.get("include_all") == "true"
+    query = Table.query.options(joinedload(Table.waiter))
+    if not include_all:
+        query = query.filter_by(is_active=True)
+    tables = query.order_by(Table.number).all()
     return success_response([_table_dict(t) for t in tables])
 
 
@@ -67,12 +66,14 @@ def create_table():
 @roles_required("manager")
 def update_table(table_id: int):
     table = db.session.get(Table, table_id)
-    if not table or not table.is_active:
+    if not table:
         return error_response("Table not found.", "TABLE_NOT_FOUND", 404)
-    if table.status != "available":
-        return error_response("Table can only be edited when available.", "TABLE_NOT_EDITABLE", 409)
 
     body = request.get_json(silent=True) or {}
+
+    # Structural edits (number/seats) only allowed when table is available
+    if ("number" in body or "seats" in body) and table.status != "available":
+        return error_response("Table can only be edited when available.", "TABLE_NOT_EDITABLE", 409)
 
     if "number" in body:
         existing = Table.query.filter(Table.number == int(body["number"]), Table.id != table_id).first()
@@ -180,6 +181,29 @@ def release_table(table_id: int):
     bill = _get_open_bill(table_id)
 
     if bill:
+        active_orders = (
+            Order.query
+            .filter(
+                Order.bill_id == bill.id,
+                Order.status.in_(["pending", "preparing", "done", "delivered"]),
+            )
+            .count()
+        )
+        if active_orders > 0:
+            return error_response(
+                "Cannot release table with active orders (pending, preparing, done, or delivered).",
+                "TABLE_HAS_ACTIVE_ORDERS",
+                409,
+            )
+
+        plan = bill.split_plan or []
+        if any(p.get("status") == "paid" for p in plan):
+            return error_response(
+                "Cannot release table: a partial payment has already been processed.",
+                "BILL_HAS_PARTIAL_PAYMENT",
+                409,
+            )
+
         bill.status = "cancelled"
         bill.closed_at = datetime.now(timezone.utc)
         _log_event(table_id, bill.id, None, "table_released", f"Table {table.number} released without payment", user_id)

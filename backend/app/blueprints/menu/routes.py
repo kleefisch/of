@@ -16,7 +16,11 @@ from app.utils.auth_helpers import roles_required
 @menu_bp.get("/categories")
 @jwt_required()
 def list_categories():
-    categories = MenuCategory.query.filter_by(is_active=True).order_by(MenuCategory.name).all()
+    include_all = request.args.get("include_all") == "true"
+    query = MenuCategory.query
+    if not include_all:
+        query = query.filter_by(is_active=True)
+    categories = query.order_by(MenuCategory.name).all()
     return success_response([
         {"id": c.id, "name": c.name, "is_active": c.is_active}
         for c in categories
@@ -72,7 +76,10 @@ def update_category(category_id: int):
 @menu_bp.get("/items")
 @jwt_required()
 def list_items():
-    query = MenuItem.query.filter_by(is_active=True)
+    include_all = request.args.get("include_all") == "true"
+    query = MenuItem.query
+    if not include_all:
+        query = query.filter_by(is_active=True)
 
     category_id = request.args.get("category_id", type=int)
     if category_id:
