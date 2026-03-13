@@ -13,7 +13,7 @@ export default function PaymentSuccessPage() {
           Your payment has been processed. Thank you!
         </p>
         <p className="mt-1 text-[14px] text-[#6A7282]">
-          You can close this page and return to your table.
+          You can close this page now.
         </p>
       </div>
 
